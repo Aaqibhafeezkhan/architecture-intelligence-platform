@@ -17,6 +17,7 @@ from app.graph.queries import (
     OWNED_NODE_IDS_QUERY,
     OWNED_RELATION_KEYS_QUERY,
     READ_CURRENT_INVENTORY_QUERY,
+    READ_GATEWAY_SOURCE_STATES_QUERY,
     READ_SOURCE_STATE_QUERY,
     READ_SOURCE_STATES_FOR_SCOPE_QUERY,
     WRITE_CURRENT_INVENTORY_QUERY,
@@ -28,12 +29,14 @@ from app.graph.schema import ensure_schema
 from app.ingestion.orchestrator import (
     DiscoveryRunResult,
     SourceRunOutcome,
+    run_apisix_discovery,
     run_filesystem_discovery,
     run_kubernetes_discovery,
 )
 from app.sources.claim_reconciliation import (
     plan_source_claim_reconciliation,
 )
+from app.sources.identity import GATEWAY_SOURCE_ID_PREFIX
 from app.sources.import_stats import (
     EmittedCounts,
     ImportRunStats,
@@ -47,6 +50,7 @@ from app.sources.inventory import inventory_event_id as compute_inventory_event_
 from app.sources.migration_mappings import SharedIdentityMappingIndex
 from app.sources.model import (
     NOT_SUPPLIED,
+    ApisixSourceConfig,
     DiagnosticCode,
     FilesystemSourceConfig,
     IngestionDiagnostic,
@@ -876,3 +880,54 @@ def import_kubernetes_source(
             ),
         )
     return stats
+
+
+def _retire_unconfigured_gateways_tx(
+    tx: neo4j.ManagedTransaction, *, configured_source_instance_ids: AbstractSet[str]
+) -> tuple[SourceImportStats, ...]:
+    persisted = sorted(
+        record["source_instance_id"]
+        for record in tx.run(READ_GATEWAY_SOURCE_STATES_QUERY, prefix=GATEWAY_SOURCE_ID_PREFIX)
+    )
+    retired = [sid for sid in persisted if sid not in configured_source_instance_ids]
+    return tuple(
+        _remove_source_tx(tx, source_instance_id=sid, removed_source_ids=frozenset(retired))
+        for sid in retired
+    )
+
+
+def retire_unconfigured_gateways(
+    driver: neo4j.Driver, *, database: str, configured_source_instance_ids: AbstractSet[str]
+) -> tuple[SourceImportStats, ...]:
+    """v0.7.0 I1.4 contract §5: removing a gateway registration removes its carriers. A dropped
+    registration gets no discovery run, so no per-scope removal can fire for it; the request-level
+    configuration is the authority, and every persisted APISIX source it no longer names is removed
+    through the same `_remove_source_tx` path in one transaction."""
+    with open_session(driver, database=database) as session:
+        ensure_schema(session)
+        return session.execute_write(
+            _retire_unconfigured_gateways_tx,
+            configured_source_instance_ids=configured_source_instance_ids,
+        )
+
+
+def import_apisix_source(
+    driver: neo4j.Driver,
+    *,
+    database: str,
+    source_config: ApisixSourceConfig,
+    migration_mappings: SharedIdentityMappingIndex | None = None,
+    tombstones: Sequence[Tombstone] = (),
+    duplicate_gateway_instance: bool = False,
+) -> ImportRunStats:
+    """Thin wrapper over `run_apisix_discovery` + `import_discovery_run` for the APISIX gateway
+    source kind (v0.7.0 I1.4). There is no predecessor-revision expectation in I1 (contract §5), so
+    the generic commit gate is the only gate; a rejected, inconsistent or incomplete capture makes
+    the run PARTIAL and commits nothing."""
+    run_result = run_apisix_discovery(
+        source_config,
+        migration_mappings=migration_mappings,
+        tombstones=tombstones,
+        duplicate_gateway_instance=duplicate_gateway_instance,
+    )
+    return import_discovery_run(driver, database=database, run_result=run_result)

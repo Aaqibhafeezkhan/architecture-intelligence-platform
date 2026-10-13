@@ -8,14 +8,18 @@ Moved out of `app.api.import_api` so the route only maps outcomes to HTTP.
 import logging
 import time
 import uuid
+from collections import Counter
 
 from app.graph.importer import (
     ImportRunStats,
     import_all_sources,
+    import_apisix_source,
     import_kubernetes_source,
+    retire_unconfigured_gateways,
 )
 from app.ingestion.import_report import ConfiguredRun
 from app.settings import SourcesConfig
+from app.sources.identity import apisix_source_instance_id
 from app.sources.migration_mappings import load_migration_mappings
 from app.sources.tombstones import load_tombstones
 
@@ -133,5 +137,49 @@ def run_all_configured_sources(
                 root=cluster_config.root,
                 stats=run_stats,
             )
+        )
+    # v0.7.0 I1.4 (contract §1): two registrations that declare the same gateway_instance_id are
+    # both rejected REJECTED_CONFLICT (GW_DUPLICATE_INSTANCE); neither commits.
+    instance_counts = Counter(gateway.gateway_instance_id for gateway in sources.gateways)
+    for gateway_config in sources.gateways:
+        start = time.perf_counter()
+        run_stats = import_apisix_source(
+            driver,
+            database=database,
+            source_config=gateway_config,
+            migration_mappings=migration_index,
+            tombstones=tombstones,
+            duplicate_gateway_instance=instance_counts[gateway_config.gateway_instance_id] > 1,
+        )
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        _log_run(import_id, run_stats, duration_ms)
+        run_results.append(
+            ConfiguredRun(
+                kind="apisix",
+                configured_source_id=gateway_config.id,
+                root=gateway_config.root,
+                stats=run_stats,
+            )
+        )
+    # v0.7.0 I1.4 (contract §5): a dropped registration gets no run above, so its persisted
+    # carriers are retired here against the request's configured registrations.
+    retired = retire_unconfigured_gateways(
+        driver,
+        database=database,
+        configured_source_instance_ids={
+            apisix_source_instance_id(
+                configured_apisix_source_id=gateway.id,
+                gateway_instance_id=gateway.gateway_instance_id,
+            )
+            for gateway in sources.gateways
+        },
+    )
+    for removal in retired:
+        logger.info(
+            "Removed import_id=%s sources=%s nodes_expired=%d relations_expired=%d",
+            import_id,
+            removal.source_instance_id,
+            removal.nodes_expired,
+            removal.relations_expired,
         )
     return import_id, run_results
