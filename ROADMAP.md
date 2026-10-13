@@ -575,6 +575,38 @@ Exit capability:
 > insufficiently supported in the selected context without silently inventing product, business,
 > authorization, or Intent claims.**
 
+## v0.7.1 — Broker-Mediated Consumer Attribution (planned)
+
+**Goal:** complete the existing messaging Current-State question so AIP can qualify which Services
+consume a broker-mediated destination without collapsing broker-native identities.
+
+**Product question:**
+
+> **For destination D in environment E, which Services can the available evidence safely attribute
+> as consumers, and with what qualification?**
+
+**Evidence basis:** Round 5 found the question recurring across Kafka and RabbitMQ systems. PR #527
+then demonstrated a **SUPPORTED EVIDENCE PATH** for Kafka: broker-held group/member state established
+topic attachment, while separate configuration/runtime evidence mapped that identity to a Service
+without treating the consumer group as a Subscription.
+
+Requirements:
+
+- define the smallest source-independent consumer-attribution semantics while keeping Kafka groups,
+  RabbitMQ queues/bindings, Service Bus subscriptions, destinations, and Services distinct;
+- keep broker evidence and Service-mapping evidence separate and preserve provenance, environment/time,
+  unresolved mappings, and the difference between attachment and actual message processing;
+- qualify the semantics against the captured Kafka case and at least one contrasting RabbitMQ shape;
+- add only the bounded ingestion/public-surface changes needed for this existing question.
+
+Out of scope: general broker-topology modelling, routing predicates, lag/offset/rebalancing,
+DLQ/retry topology, or broad broker administration.
+
+**Exit capability:**
+
+> **AIP can evidence-qualify Service-level consumer attribution for broker-mediated destinations
+> without inventing equivalence between distinct broker-native concepts.**
+
 ## v0.8 — Cross-Boundary Architecture Knowledge + Product-Boundary Validation (planned)
 
 **Goal:** add only the Current-State composition/membership semantics needed for bounded
