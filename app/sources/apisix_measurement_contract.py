@@ -31,6 +31,11 @@ MAPPING_FILE = "apisix-mapping.json"
 # Contract §3: only the inspected release is compatible (review of #522).
 SUPPORTED_APISIX_VERSION = "3.19.0"
 
+# Contract §3 (amended in I2.2a, review of #525): the start boundary must have been observed unchanged
+# for at least this long before an absent series may be read as 0. The real-APISIX run measured a
+# ~14 s publication lag; 20 s is the capture tool's default quiet period.
+MIN_START_STABLE_SECONDS = 20
+
 # Contract §2: bounds. A violation is REJECTED_UNSUPPORTED / GWM_LIMIT_EXCEEDED.
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_EXTRACT_BYTES = 8 * 1024 * 1024
@@ -86,6 +91,8 @@ class Manifest:
     end_settled: bool
     start_scrape_count: int
     end_scrape_count: int
+    start_stable_seconds: int
+    end_stable_seconds: int
     no_restart: bool
     disabled_labels: tuple[str, ...]
     route_coverage: Mapping[str, bool]
@@ -103,7 +110,8 @@ class Series:
 @dataclass(frozen=True)
 class SeriesDelta:
     series: Series  # the end-boundary series when present, else the start-boundary one
-    status: str  # DELTA | DECREASED | ONE_BOUNDARY_START | ONE_BOUNDARY_END
+    # DELTA | DELTA_FIRST_IN_WINDOW | DECREASED | ONE_BOUNDARY_START | ONE_BOUNDARY_END
+    status: str
     delta: int | None
 
 
@@ -118,7 +126,7 @@ class ValidatedMeasurement:
         return window_reasons(self.manifest)
 
     def series_deltas(self) -> list[SeriesDelta]:
-        return series_deltas(self.start, self.end)
+        return series_deltas(self.start, self.end, self.manifest)
 
 
 # ---- extract -------------------------------------------------------------------------------
@@ -246,6 +254,12 @@ def parse_manifest(document: Mapping[str, Any]) -> Manifest:
         if not _timestamp_ok(document.get(name)):
             raise MeasurementRejection("GWM_MANIFEST_INVALID")
     start_settled, end_settled = _bool(document, "start_settled"), _bool(document, "end_settled")
+    stable = []
+    for name in ("start_stable_seconds", "end_stable_seconds"):
+        seconds = document.get(name)
+        if not isinstance(seconds, int) or isinstance(seconds, bool) or seconds < 0:
+            raise MeasurementRejection("GWM_MANIFEST_INVALID")
+        stable.append(seconds)
     no_restart = _bool(document, "no_restart")
     start_count = _scrape_count(document, "start", settled=start_settled)
     end_count = _scrape_count(document, "end", settled=end_settled)
@@ -277,6 +291,8 @@ def parse_manifest(document: Mapping[str, Any]) -> Manifest:
         end_settled=end_settled,
         start_scrape_count=start_count,
         end_scrape_count=end_count,
+        start_stable_seconds=stable[0],
+        end_stable_seconds=stable[1],
         no_restart=no_restart,
         disabled_labels=tuple(labels),
         route_coverage=dict(coverage),
@@ -328,10 +344,27 @@ def window_reasons(manifest: Manifest) -> list[str]:
     return sorted(reasons)
 
 
-def series_status(start: int | None, end: int | None) -> tuple[str, int | None]:
+def first_in_window_allowed(manifest: Manifest, route: str) -> bool:
+    """Contract §3 (amended in I2.2a, reviews of #524 and #525): an absent start sample may be read as
+    0 only in a valid window whose start boundary was recorded as unchanged for at least
+    `MIN_START_STABLE_SECONDS`, on a Route the operator asserts was covered, with the `consumer`
+    label on."""
+    return (
+        not window_reasons(manifest)
+        and manifest.start_stable_seconds >= MIN_START_STABLE_SECONDS
+        and manifest.route_coverage.get(route) is True
+        and "consumer" not in manifest.disabled_labels
+    )
+
+
+def series_status(
+    start: int | None, end: int | None, *, first_in_window: bool = False
+) -> tuple[str, int | None]:
     if start is None and end is None:
         raise ValueError("a series exists at at least one boundary")
     if start is None:
+        if first_in_window:
+            return "DELTA_FIRST_IN_WINDOW", end
         return "ONE_BOUNDARY_END", None
     if end is None:
         return "ONE_BOUNDARY_START", None
@@ -340,13 +373,21 @@ def series_status(start: int | None, end: int | None) -> tuple[str, int | None]:
     return "DELTA", end - start
 
 
-def series_deltas(start: Mapping[str, Series], end: Mapping[str, Series]) -> list[SeriesDelta]:
+def series_deltas(
+    start: Mapping[str, Series], end: Mapping[str, Series], manifest: Manifest | None = None
+) -> list[SeriesDelta]:
+    """Per exact series. Without a manifest no first-in-window reading is possible."""
     deltas = []
     for key in sorted(start.keys() | end.keys()):
         first, last = start.get(key), end.get(key)
-        status, delta = series_status(first.value if first else None, last.value if last else None)
         carrier = last if last is not None else first
         assert carrier is not None
+        status, delta = series_status(
+            first.value if first else None,
+            last.value if last else None,
+            first_in_window=manifest is not None
+            and first_in_window_allowed(manifest, carrier.labels["route"]),
+        )
         deltas.append(SeriesDelta(series=carrier, status=status, delta=delta))
     return deltas
 
