@@ -32,12 +32,12 @@ The executable-check column cites only checks that exist at this freeze. The rea
 
 ## 2. Positive and abstaining outcomes per scenario class (I4 spec §10)
 
-A class cannot pass because every execution abstained: each class names at least one case that resolves a positive outcome and at least one expected-negative case, both independently frozen.
+A class cannot pass because every execution abstained: each class names at least one case that resolves a positive outcome and at least one expected-negative case, both independently frozen. The class of every case is also frozen, by hand, in [`i4-vectors/expected-i4.json`](i4-vectors/expected-i4.json) (`classifications`): the comparator requires each ledger record to carry exactly that label (decision record D3), and the two columns below are checked against it.
 
 | Class | Parent §22 | Positive or resolved cases | Expected-negative or abstaining cases |
 |---|---|---|---|
 | Usage | S22-01, S22-03, S22-04 | `A01`, `A02`, `A04` | `A05`, `A03` |
-| Coverage and window | S22-02 | `A02`, `A12` | `A03`, `A11`, `A13`, `A20` |
+| Coverage and window | S22-02 | `A02` | `A03`, `A11`, `A12`, `A13`, `A20` |
 | Attribution | S22-05 | `A01`, `A04` | `A10` |
 | Associations | S22-07, S22-08 | `A08`, `A09`, `A01` | `A06`, `A07`, `A19`, `B07a`, `B07b` |
 | Evidence | S22-10 | `E01a`, `E01b`, `E01c`, `B07c` | `E02a`, `E02b`, `E02c` |
@@ -59,5 +59,5 @@ A class cannot pass because every execution abstained: each class names at least
 
 - The I3 oracle's worlds are synthetic handoff states with synthetic snapshot ids; refs and cursors are literal only under those ids. The I4.2 runner on a real import compares structure and rebinds refs; it never edits an expected literal.
 - `B07` is a synthetic world in the exact frozen I2 handoff shape. It is neither a real capture nor the APISIX replay.
-- The `B07` expectation is frozen here and may not change after the first execution (I4 spec §13). Executing it in the unit tier before the candidate exists is deliberately not done: no test in this freeze projects `B07`.
+- The `B07` expectation is frozen here and may not change after the first execution (I4 spec §13). The I4.1a freeze projected nothing. The I4.1b runner smoke (development mode, never eligible to qualify) exercises the tooling on it and matched the expectation unchanged; the first qualifying execution is the I4.2 runner on the candidate.
 - Parent §22 item 3 holds "if the selected source can establish complete bounded coverage". I4.1c records whether the pinned APISIX capture procedure establishes it.
