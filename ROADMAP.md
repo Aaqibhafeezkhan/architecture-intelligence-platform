@@ -625,8 +625,9 @@ only the Current-State composition/membership semantics needed for bounded cross
 
 **Product-boundary question:**
 
-> **Does that cross-boundary evidence materially change what a coding agent needs to inspect before a
-> bounded change, beyond what repository/source analysis already provides?**
+> **Does that cross-boundary evidence materially change what a coding agent can establish and needs
+> to inspect before a bounded change, beyond repository/source analysis and direct execution
+> alone?**
 
 The core rule remains:
 
@@ -650,11 +651,17 @@ API-aware Current State**, and broker-mediated consumer attribution — and then
 cross-boundary projection. Partial, unresolved and unsupported results remain valid; the demo must
 not manufacture positive evidence merely to exercise a feature.
 
+Where the demonstration depends on transient runtime or environment evidence, freeze the relevant
+evidence, context, mappings and rules so the same architectural conclusion can be replayed
+deterministically. Replay of a captured snapshot is not evidence that the same Current State still
+holds later; freshness requires new evidence.
+
 The comparison should give source-analysis tooling realistic access to the repositories,
-configuration and contracts it can analyze, while AIP contributes independently qualified
-distributed-system evidence. The product test is whether the combined workflow materially improves the coding agent's
-investigation boundary beyond strong source analysis without introducing unsupported architectural
-claims.
+configuration and contracts it can analyze, while retaining realistic direct-execution checks
+available to the coding agent. AIP contributes independently qualified distributed-system evidence.
+The product test is whether the combined workflow materially improves what the coding agent can
+establish and must inspect beyond strong source analysis and direct execution without introducing
+unsupported architectural claims.
 
 **Exit capability:**
 
@@ -890,7 +897,8 @@ The product-question sequence is:
 - **v0.6:** Where does this distributed relationship hold?
 - **v0.7:** How are APIs exposed or consumed, and what does the evidence establish?
 - **v0.8:** Which established distributed relationships cross independently established boundaries,
-  and does that change what the coding agent must inspect beyond source analysis?
+  and does that change what the coding agent can establish and must inspect beyond source analysis
+  and direct execution?
 - **v0.9, provisional:** What does this autonomous component explicitly promise to the outside?
 - **v0.10, provisional:** What does the evidence support about promise versus cooperation here?
 - **v1.0-rc:** Freeze only what survived product and semantic qualification.
@@ -925,8 +933,8 @@ None of the above are committed dates. Detailed scope still belongs in release s
 Planned scope, authorization to execute a release, and qualification for the stable v1.0 contract are
 separate decisions. Planned status does not waive product-value or technical qualification gates.
 
-Validate representative architecture tasks with and without AIP using comparable source access and
-independently authored expected results. Define baselines and success/stop thresholds before the
+Validate representative architecture tasks with and without AIP using comparable source access,
+realistic direct-execution access, and independently authored expected results. Define baselines and success/stop thresholds before the
 pilot. Assess correctness together with useful answer coverage, justified abstention, false alarms,
 and total engineering effort including setup, source maintenance, identity mapping, and clarification.
 Reducing false claims only by returning more unresolved answers does not establish product value.
@@ -934,8 +942,9 @@ Reducing false claims only by returning more unresolved answers does not establi
 For **every capability release**, product qualification must include at least one recurring
 architecture question that the capability turns into a **reusable, deterministic, evidence-qualified
 answer or bounded context**. Validate that answer end to end: the consumer can resolve its evidence,
-qualification, context and limitations, and the workflow is compared with reconstruction from the
-same available source access. Internal semantic correctness alone is necessary but not sufficient
+qualification, context and limitations, the conclusion can be reproduced from the same frozen
+premises, and the workflow is compared with reconstruction from the same available source and
+direct-execution access. Internal semantic correctness alone is necessary but not sufficient
 evidence of product value.
 
 Record a continue, narrow, defer, or stop decision when evaluating these gates. Failed gates require
