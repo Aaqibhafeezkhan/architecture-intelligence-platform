@@ -1,6 +1,6 @@
 # AIP v0.8 I2: Assessment, Projection and Tool
 
-**Status:** Draft 0.3 (2026-10-26; I2a: source instance id, evidence id and one catalog per environment in §2)  
+**Status:** Draft 0.5 (2026-10-26; I2b: brokers of the environment and declared-only resolution in §5; ref domain, `group_ids[]` and single-T `captured_at` in §6)  
 **Governs:** [v0.8 specification](specification.md) §3.2–§3.6, §4.3, §5 and §7 I2, as amended by D9–D12 (§11).  
 **Baseline:** `main` at `08da0b7` (I1 complete: [completion record](i1-completion-record.md), [handoff](i1-i2-handoff.md)).  
 **Hands off to:** I3 (two-broker environment and live captures).
@@ -158,6 +158,16 @@ attribution row.
 on any broker of the request's environment. Topic ids are never merged; the name only selects
 producers.
 
+**Brokers of the environment** (I2b, owner review). Topics and `PUBLISHES_TO` carry no environment.
+The brokers of environment E are therefore the brokers that have an accepted capture or an accepted
+mapping source in E; no other declared broker counts. A producer that publishes only on other
+brokers is not counted. If no producer remains, the crossing is `UNRESOLVED`.
+
+**Catalog service resolution** (I2b, owner review). A catalog service resolves only to a *declared*
+Service: an accepted decision with discovery status `DECLARED`, under the v0.7.1 mapping-guard rule.
+An observed-only or refused decision leaves it unresolved. The snapshot derives the resolution
+inside `event_catalog_v1` (`service_resolutions`, `aliases_applied`).
+
 **Bounded Context** of a Service: its catalog membership. In the catalog, a Service is in exactly
 one domain (I1 §5.1).
 
@@ -198,17 +208,17 @@ Several captures are never collapsed into one T.
 broker_id, topic_name                     # the topic name; for R7 the only topic field
 topic_id?                                 # broker-scoped Topic id; never merged; absent only for R7
 consumer_service_id?                      # absent for R6
-group_id?                                 # the attributed group (R1, R4, R6)
+group_ids[]                               # every attributed group (R1, R4, R6), sorted; empty for R2, R7
 crossing                                  # INBOUND | INSIDE | OUTBOUND | NONE | UNRESOLVED
 status, reason?                           # D10 enum + reason
 declared_event_types[]                    # declared only
 producers[]                               # {service_id, bounded_context_id, broker_ids[], declared_event_types[]}
 cross_broker_producers                    # true when a producer used for `crossing` publishes on no Topic of this row's broker
-captured_at?                              # T of the capture of this broker (R1, R2, R4, R6)
+captured_at?                              # the one T of the supporting evidence; absent when it has several
 promise_evidence_refs[], attachment_evidence_refs[], mapping_evidence_refs[]
 ```
 
-Rows are sorted by `broker_id`, `topic_name`, `consumer_service_id` (or `group_id`).
+Rows are sorted by `broker_id`, `topic_name`, `consumer_service_id` (or the first of `group_ids`).
 
 **Top-level codes:**
 
@@ -222,6 +232,8 @@ Rows are sorted by `broker_id`, `topic_name`, `consumer_service_id` (or `group_i
 | `PRODUCER_SIDE_DECLARED_ONLY`, `EVENT_HANDLING_NOT_ESTABLISHED` | limitation, always present | §3 |
 | `CROSS_BROKER_DELIVERY_NOT_ESTABLISHED` | limitation, present when any row has `cross_broker_producers: true`, whatever brokers were requested | §3 |
 | `MORE_ROWS_AVAILABLE`, `EVIDENCE_REF_NOT_RESOLVED` | limitation | as v0.7.1 |
+
+**Evidence refs** use their own domain, `binding-evidence:<sha256(ld(tool, snapshot id, query digest, kind, *sorted ids))>`, with the kinds `CATALOG_PROMISE`, `KAFKA_ATTACHMENT` and `KAFKA_SERVICE_MAPPING`; the destination-consumer refs are unchanged.
 
 **Evidence mode.** As v0.7.1 I3 §4: opaque refs bound to the snapshot and the query context, 1–20
 per call. The promise path resolves to the catalog file, catalog digest and lookup entry. The broker
