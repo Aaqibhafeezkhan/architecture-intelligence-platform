@@ -11,6 +11,7 @@ from app.api import (
     analysis,
     api_consumer_usage,
     architecture_intelligence,
+    binding_picture,
     destination_consumers,
     evidence,
     import_api,
@@ -31,6 +32,8 @@ from app.deps import get_driver, get_settings
 from app.graph.repository import build_driver, open_session
 from app.mcp import wiring as mcp_wiring
 from app.mcp.app import build_mcp_app, mcp_session_manager_lifespan
+from app.mcp.server import build_mcp_server
+from app.mcp.server import mcp_server as default_mcp_server
 from app.settings import Settings, config_path_from_env, load_config, load_secrets
 from app.telemetry.correlation_buffer import HttpCorrelationBuffer
 from app.version import package_version
@@ -60,7 +63,11 @@ async def lifespan(app: FastAPI):
     architecture_intelligence_service = build_production_service(
         app.state.driver, **production_service_kwargs(settings.config)
     )
-    mcp_wiring.configure(architecture_intelligence_service)
+    # v0.8 I2 D11: only the app that serves the module singleton configures the process-global
+    # wiring. A flag-on app's own MCP server dispatches through its own `app.state` service, so
+    # starting it must never redirect a running flag-off app's six tools (review of #645).
+    if app.state.mcp_uses_global_wiring:
+        mcp_wiring.configure(architecture_intelligence_service)
     app.state.architecture_intelligence_service = architecture_intelligence_service
     openai_api_key = settings.secrets.openai_api_key
     if settings.config.llm.enabled and openai_api_key and openai_api_key.get_secret_value():
@@ -78,7 +85,7 @@ async def lifespan(app: FastAPI):
     )
     app.state.trace_ingest_lock = asyncio.Lock()
     async with AsyncExitStack() as stack:
-        await stack.enter_async_context(mcp_session_manager_lifespan())
+        await stack.enter_async_context(mcp_session_manager_lifespan(app.state.mcp_server))
         yield
     app.state.driver.close()
 
@@ -137,11 +144,27 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     # parsed above; `load_config` never calls `load_secrets()`/requires NEO4J_PASSWORD, so
     # create_app() stays free of any hard secret dependency (spec §15: local/trusted-network only by
     # default; a deployment overrides via config.yaml, not by patching this function).
+    #
+    # v0.8 I2 D11: with `experimental.binding-picture` the app builds its own MCP server, which also
+    # lists `get_binding_picture` and dispatches to this app's own service (never another app's,
+    # even when two apps' lifespans overlap). Off, the module singleton serves the six tools.
+    if config.experimental.binding_picture:
+        app.include_router(binding_picture.router)
+        mcp_server = build_mcp_server(
+            binding_picture=True,
+            get_service=lambda: app.state.architecture_intelligence_service,
+        )
+    else:
+        mcp_server = default_mcp_server
+    app.state.mcp_server = mcp_server
+    app.state.mcp_uses_global_wiring = mcp_server is default_mcp_server
     mcp_config = config.mcp
     app.mount(
         "/",
         build_mcp_app(
-            allowed_origins=mcp_config.allowed_origins, allowed_hosts=mcp_config.allowed_hosts
+            allowed_origins=mcp_config.allowed_origins,
+            allowed_hosts=mcp_config.allowed_hosts,
+            server=mcp_server,
         ),
     )
 
