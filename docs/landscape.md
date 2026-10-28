@@ -6,7 +6,7 @@
 >
 > Inclusion does not imply endorsement, dependency, or roadmap commitment. External ideas should influence AIP only where they survive AIP's own evidence, semantics, and validation requirements.
 
-_Last reviewed: 2026-10-26_
+_Last reviewed: 2026-10-27_
 
 ## AIP anchor
 
@@ -51,6 +51,7 @@ endorsement, dependency, or roadmap commitment.
 
 [Bigraphs](#robin-milner--bigraphs--bigraphical-reactive-systems) ·
 [Promise Theory](#mark-burgess--promise-theory) ·
+[Directional event coupling](#gregor-hohpe--directional-coupling-in-event-driven-systems) ·
 [Designing Delivery / Promise Thinking](#jeff-sussna--designing-delivery--promise-thinking) ·
 [Semantic Spacetime](#mark-burgess--semantic-spacetime) ·
 [SSTorytime](#mark-burgess--sstorytime-and-context-investment) ·
@@ -111,16 +112,21 @@ visualization, provenance, or retrieval?
 [Typed probabilistic judgment](#typesafe-ai--jev-and-typed-probabilistic-judgment) ·
 [Enola](#enola--deterministic-architecture-context-and-regression-testing) ·
 [Embabel Worlds](#embabel-worlds--governed-enterprise-worlds) ·
+[Federated architecture content](#jörg-ziemann--federated-architectural-content-management) ·
+[Unblocked context engine](#unblocked--cross-source-engineering-context) ·
 [Agent API Profile](#christian-posta--agent-api-profile) ·
 [MCP](#model-context-protocol-mcp) ·
 [Deterministic contextual tools](#tudor-girba--deterministic-contextual-tools-for-system-understanding) ·
-[Contextual tools beyond code reading](#simon-wardley--contextual-tools-beyond-code-reading) ·
+[Situation awareness and contextual tools](#simon-wardley--contextual-tools-beyond-code-reading) ·
 [MCP-washing](#erik-wilde--beyond-mcp-washing-and-ai-ready-apis) ·
 [Procedural Graphs](#lu-et-al--procedural-graphs) ·
 [Agent-ready traceability and API boundaries](#daniel-kocot--agent-ready-apis-traceability-and-preserved-intent) ·
 [BootUI](#bootui--runtime-context-for-coding-agents) ·
 [Deterministic integration](#kin-lane--agents-should-write-code-to-integrate-not-infer-it-at-runtime) ·
 [Competitive landscape harness](#kin-lane--competitive-landscape-harness) ·
+[Start with the flow](#kin-lane--start-with-the-flow-not-the-agent) ·
+[Supervisory engineering and situation awareness](#annie-vella--the-middle-loop-and-supervisory-engineering) ·
+[Software engineering retreat](#thoughtworks--future-of-software-engineering-retreat) ·
 [UI Atlas](#ui-atlas--ai-successors) ·
 [Thoughtworks AI/works](#thoughtworks-aiworks) ·
 [AI Agents — The Definitive Guide](#nicole-königstein--ai-agents-the-definitive-guide) ·
@@ -137,6 +143,7 @@ evidence-qualified architecture context without becoming the source of architect
 [Mneme](#mneme-hq) ·
 [Architecture guardrails](#oreilly--architectural-guardrails-for-ai-generated-code) ·
 [AI-accelerated drift](#ankur-agnihotri--architecture-drift-reduction-with-llms) ·
+[Whole-system drift reviews](#marco-nissen--codebase-drift-and-whole-system-reviews) ·
 [Design versus implementation](#alireza-rahmani-khalili--ai-did-not-eliminate-software-design) ·
 [Architectural fitness](#raghunandan-e-srinivasan--from-architectural-debt-to-architectural-fitness) ·
 [Bounded agency](#matthew-skelton--bounded-agency-and-the-ai-native-operating-model) ·
@@ -642,6 +649,35 @@ failure propagation, or assuming that a static snapshot is reality itself. This 
 representation and uncertainty, **not** an immediate `Residue` entity or roadmap commitment.
 AIP's thesis holds independently of current agents and harnesses.
 
+
+### Gregor Hohpe — Directional Coupling in Event-Driven Systems
+
+**Sources**
+
+- [The Many Facets of Coupling (2024)](https://www.enterpriseintegrationpatterns.com/ramblings/coupling_facets.html)
+- [Event-driven = Loosely coupled? Not so fast! (2024)](https://www.enterpriseintegrationpatterns.com/ramblings/eventdriven_coupling.html)
+
+**Core idea**
+
+Coupling is multidimensional and directional: asynchronous events can reduce a producer's
+awareness of consumers while leaving consumers dependent on event availability, meaning, and
+evolution. Adding another consumer may not require a producer change; changing the producer
+later can expose dependencies the producer never explicitly knew. A topic connection is not
+a single scalar measure of coupling.
+
+**Why this matters to AIP**
+
+Understanding cross-boundary relationships requires preserving the direction of reliance
+and the specific dimension of coupling. An observed broker attachment alone cannot
+establish event-type processing, semantic compatibility, resilience, or the strength
+of coupling. Architectural trade-offs still require judgment about the participants'
+ability to change independently.
+
+**AIP boundary**
+
+The binding perspective does not imply a universal coupling score or a dependency-strength
+ranking. The meaning of the relationship must remain narrower than the available evidence.
+
 ## 2. Evidence and Current State
 
 ### OpenTelemetry Semantic Conventions
@@ -792,6 +828,7 @@ authority for AIP; qualification against real, independently authored evidence i
 **Source**
 
 - [We Can Describe an API. But How Do We Describe an API Product?](https://architecturalbytes.substack.com/p/we-can-describe-an-api-but-how-do)
+- [When Data Products Share an API (2026-10-27)](https://www.linkedin.com/pulse/when-data-products-share-api-daniel-kocot-otmce/)
 
 **Core idea**
 
@@ -812,8 +849,14 @@ configuration, or traffic. If a product relationship becomes necessary for a bou
 distributed-architecture question, it should enter as its own attributable relation and retain its
 authority and provenance.
 
-This is a useful semantic-gap hypothesis for later projections, not a reason to expand the current
-v0.7 Current-State scope.
+A shared HTTP interface may serve both an API product and a data product with different
+output-port and product boundaries. An OpenAPI Overlay can derive a selected interface view,
+but cannot decide which operations a product owns, what those data mean, or who authorizes
+the relationship. An implementation artifact must not silently become the architectural
+authority for product membership or commitment.
+
+This is a semantic-boundary observation rather than a reason to own data-product
+cataloging, OpenAPI Overlay transformations, or product-governance workflows.
 
 ### API Gateways — Configured Access and Observed Usage
 
@@ -1474,7 +1517,66 @@ This mirrors AIP's own `PROVIDES` / `CALLS` / `SENDS` / `RECEIVES_FROM` model an
 
 ---
 
+
 ## 3. Agent context and machine consumption
+
+### Jörg Ziemann — Federated Architectural Content Management
+
+**Sources**
+
+- [Architectural Content Management in Agile Times (2019, PDF)](https://eamfundamentals.com/wp-content/uploads/2023/02/ar_content_mgmt.pdf)
+- [Nadzeya Stalbouskaya — single architecture repository versus connected sources (2026-10-27)](https://www.linkedin.com/feed/?highlightedUpdateUrn=urn%3Ali%3Aactivity%3A7520801748245204994)
+
+**Core idea**
+
+Architecture knowledge has heterogeneous forms and custodians: collaboration, case management,
+documentation, asset inventories, standards, and enterprise communication need different tools
+and lifecycles. Ziemann's Collaborative Knowledge Management Portal is a federated entry point,
+not a demand that every authoritative record be copied into one repository. Stalbouskaya's
+practitioner reading emphasizes logical coherence over physical centralization.
+
+**Why this matters to AIP**
+
+The authoritative contract, deployment configuration, runtime capture, owner confirmation,
+and historical decision may live in different systems. The useful architectural question
+is not merely whether they can be found but which claims each source can legitimately
+establish and how their qualified relationships compose.
+
+**AIP boundary**
+
+AIP is neither the federated enterprise portal nor a replacement CMDB, wiki, or workflow
+system. It projects only the local evidence and attributable promises necessary for a
+specific cross-boundary binding question, preserving each source's authority and context.
+
+
+### Unblocked — Cross-Source Engineering Context
+
+**Sources**
+
+- [Inside the Unblocked Context Engine: How Relevance Is Decided](https://getunblocked.com/blog/inside-the-unblocked-context-engine/)
+
+**Core idea**
+
+Unblocked connects repositories, code history, issues, conversations, documents and other
+engineering systems into a task-shaped context layer. It does more than search: knowledge
+graph relationships, recency, inferred expertise, access controls, ranking, compression,
+and citations help agents reconcile organizational context. It is a concrete implementation
+of federated engineering knowledge access, not a straw-man source-code search engine.
+
+**Why this matters to AIP**
+
+A mature context engine can retrieve, relate, rank, and cite engineering knowledge across
+sources, including recency and expertise signals. It should not be characterized as simple
+source-code search or as lacking provenance. This makes it a substantive adjacent product
+when examining which architectural questions benefit from dedicated, deterministic semantics.
+
+**AIP boundary**
+
+The distinction worth investigating is between context synthesis and a specific, reproducible
+architectural assessment built from independently qualified observations and owner-attributable
+commitments. Neither discovery nor semantic rigor alone proves unique decision value. Avoid
+duplicating general retrieval, indexing, and conversational context features.
+
 
 ### Cochran et al. — When Coding Is Free, Where Is the Bottleneck?
 
@@ -1861,31 +1963,45 @@ This strengthens the existing Moldable Architecture Knowledge direction and adds
 
 **Sources**
 
+- [On Evolution, Maps and Bad Choices (2015)](https://blog.gardeviance.org/2015/05/on-evolution-maps-and-numpties.html)
+- [What is a map, what isn't? (2015)](https://blog.gardeviance.org/2015/05/what-is-map-what-isnt.html)
+- [A moment of reflection: On vibe coding, context and open source (2026-02-19)](https://swardley.medium.com/a-moment-of-reflection-f401c5d848dc)
 - [Reading code to understand a system is already beyond repair](https://www.linkedin.com/posts/simonwardley_for-those-wondering-about-my-warning-from-activity-7473097333409300481-7H4j)
 - [Software engineering needs contextual tools, not one generic toolset](https://www.linkedin.com/posts/simonwardley_x-whats-the-worse-thing-about-software-activity-7470403677426585600-RyeL)
 
 **Core idea**
 
-Wardley argues that reading code is an increasingly untenable way to understand large systems,
-especially as AI accelerates code production. The deeper problem is the toolset: software
-development relies too heavily on generic tools and human reconstruction instead of contextual
-tools built to answer the question at hand. At larger scale, maintaining situational awareness
-requires tools that expose structure and consequences without requiring linear inspection of the
-code base.
+Wardley treats **situational awareness** as a prerequisite for strategic action: understand the
+landscape, component dependencies and their position relative to user needs, then consider how
+components may evolve before deciding what to do. A Wardley Map represents **position and movement**;
+a static systems dependency diagram does not thereby become a Wardley Map. Maps support orientation,
+communication and judgment rather than mechanically prescribing decisions.
+
+In *A moment of reflection*, Wardley revisits his earlier "Maps as Code" thesis: the
+text-centric medium of coding and conversation poorly exposes the problem space, its
+relationships and context. He calls for examples, visualizations and tools contextual to
+the problem at hand, cautioning that adding knowledge graphs to generic tools is not
+the same as improving situational awareness. Question-specific views can expose relevant
+structure without requiring someone to reconstruct everything through code reading.
 
 **Why this matters to AIP**
 
-This complements Girba's question-driven contextual-tool model with a product-scale framing:
-architecture understanding should be an explicit capability of the development environment, not a
-mental model reconstructed from enough code before time runs out.
+For a concrete cross-boundary change, a bounded architectural projection can help an engineer or
+coding agent *orient*: which participants and relationships matter, which claims are established,
+what commitments apply and where uncertainty remains. This is a specialized contribution to
+situation awareness, **not** a representation of a Wardley Map's user-value positioning or
+evolution axis.
 
-AIP fits as one such contextual tool for **distributed architecture**. It does not replace source
-analysis. It answers the questions whose relevant evidence spans autonomous components and
-heterogeneous sources, then exposes the bounded investigation context a coding agent still needs.
+Annie Vella's human-factors account complements Wardley's strategic view: automation can preserve
+the visibility of system changes while eroding comprehension of their significance. More evidence
+or more telemetry is not automatically better situation awareness; relevant relationships must be
+presented with sufficient meaning, provenance and limits to support sound decisions.
 
-The implication is not that AIP should build a universal map. Its role is narrower: provide
-deterministic, evidence-qualified projections for concrete distributed-architecture questions so
-agents and humans can orient themselves before deciding where deeper inspection is required.
+**AIP boundary**
+
+AIP provides question-specific, evidence-qualified architectural premises; engineers and agents
+reason about future consequences and choose actions. It neither predicts Wardley-style evolution
+nor builds a general strategy-mapping or supervisory-control platform.
 
 ### OpenAI — Harness Engineering and Agent Legibility
 
@@ -2631,6 +2747,32 @@ AIP does not expose raw OpenAPI, telemetry, or arbitrary graph access and ask an
 
 > **Do not spend probabilistic reasoning on facts and relationships that can be established deterministically.**
 
+
+### Kin Lane — Start With the Flow, Not the Agent
+
+**Source**
+
+- [Start With The Flow, Not The Agent (2026-10-26)](https://apievangelist.com/2026/10/26/start-with-the-flow-not-the-agent/)
+
+**Core idea**
+
+Start with the business interaction, the provider's responsibilities and usable contracts,
+then select the appropriate interface and transport. Asking whether to adopt MCP or A2A
+before establishing the actual flow reverses the design problem. Agent-facing metadata
+cannot manufacture missing capability ownership or obligations.
+
+**Why this matters to AIP**
+
+The customer question is which binding between autonomous participants matters for a
+concrete use or change, and what the evidence and promises establish about it. MCP makes
+the answer accessible to a coding agent but is not the architectural intelligence.
+This reinforces the existing provider/consumer jobs and bounded projection principle.
+
+**AIP boundary**
+
+The flow-first argument is not a reason to own API gateways, orchestrators, enterprise
+workflow modeling, or additional transport-specific integrations.
+
 ### Kin Lane — Competitive Landscape Harness
 
 **Source**
@@ -2684,6 +2826,81 @@ The shared principle — **do not invent a relationship simply because it is pla
 **AIP distinction**
 
 UI Atlas models UI states, controls, and transitions; AIP models architectural relationships and additionally reconciles distinct evidence classes (declared vs. observed). The two are complementary rather than competing.
+
+
+### Annie Vella — The Middle Loop and Supervisory Engineering
+
+**Sources**
+
+- [The Middle Loop (2026-03-13)](https://annievella.com/posts/the-middle-loop/)
+- [Verification Without Inspection (2026-07-31)](https://annievella.com/posts/verification-without-inspection/)
+- [Supervisory Engineering Work (2026-10-23)](https://annievella.com/posts/supervisory-engineering-work/)
+
+**Core idea**
+
+Vella's *Middle Loop* describes directing AI, evaluating its output and correcting it as
+supervisory engineering between implementation and delivery. Her longitudinal research reports a
+relative shift from creation toward verification based on participants' self-reported task focus;
+it does not establish that developers gained more time for architectural design.
+
+*Supervisory Engineering Work* connects this role to human-factors research on supervisory
+control (Sheridan and Verplank) and the **out-of-the-loop performance problem** (Endsley and Kiris).
+Increased automation can preserve **perception** of system changes while weakening
+**comprehension** of their meaning; operators may then struggle to intervene. Her proposed
+response includes deliberately chosen automation levels, appropriate signals, intervention
+mechanisms and training. These are human-factors findings and design considerations, not
+evidence that any one architecture tool improves situation awareness.
+
+*Verification Without Inspection* explores formal methods as a way to establish that generated
+implementations or agent actions satisfy specified properties, while acknowledging that deciding
+on the *right* specification remains difficult. Mathematical proof of a modeled property is
+different from establishing what is true of an observed distributed system.
+
+**Why this matters to AIP**
+
+Wardley's situational-awareness lens and Vella's supervisory-control lens intersect at the
+difference between **seeing a change** and **understanding its consequences**. A question-specific
+binding picture can make relevant cross-boundary relationships, attributable commitments,
+observation scope and unresolved questions comprehensible to a supervising human or coding agent.
+Evidence-qualified architectural premises may also inform external specifications and checks;
+they are not themselves formal proofs of implementation correctness or runtime behavior.
+
+**AIP boundary**
+
+AIP supplies inspectable architectural premises, not supervisory control, action authorization,
+verification of generated code, a formal-methods prover or a complete model of future behavior.
+Human and agent reasoning remains responsible for projected consequences and intervention.
+
+
+### Thoughtworks — Future of Software Engineering Retreat
+
+**Sources**
+
+- [The Future of Software Engineering: Retreat Findings and Strategic Insights (February 2026, PDF)](https://www.thoughtworks.com/content/dam/thoughtworks/documents/report/tw_future%20_of_software_development_retreat_%20key_takeaways.pdf)
+- [Thoughtworks event findings](https://www.thoughtworks.com/about-us/events/the-future-of-software-development)
+
+**Core idea**
+
+The retreat describes engineering rigor moving toward specifications, constraints,
+verification and risk management as agents accelerate implementation. Fast agent execution
+exposes slower cross-team dependencies and human decisions. The findings also highlight
+supervisory engineering, cognitive debt, continuous comprehension, and semantic grounding.
+They are strategic observations from practitioner discussions, not controlled evidence
+that a particular architecture product works.
+
+**Why this matters to AIP**
+
+In cross-boundary modernization, locally successful code generation does not establish
+external commitments or consequences for other components. Architectural declarations,
+operational observations, migration decisions, and independently verified behavior each
+support different claims and should not be collapsed into one account of correctness.
+
+**AIP boundary**
+
+This supports the existing AI-assisted modernization rationale, not broader policy,
+risk-tiering, knowledge-graph, or agent-operating-system scope. The report's AI-agent
+topologies are distinct from the autonomous distributed-system participants in AIP's
+Promise Theory model.
 
 ### Thoughtworks AI/works
 
@@ -3099,6 +3316,34 @@ Architecture assessment / drift / governance
 ```
 
 This is a future direction, not v0.4 scope.
+
+
+### Marco Nissen — Codebase Drift and Whole-System Reviews
+
+**Sources**
+
+- Marco Nissen, *Everything Drifts* (2026-10-25; article text discussed in the research review)
+- [Marco Nissen — Fast Fashion for Code (2026-08-11)](https://www.linkedin.com/pulse/fast-fashion-code-marco-nissen-obtme)
+
+**Core idea**
+
+Individually reasonable, agent-generated changes can accumulate duplication and drift that
+a review of one PR cannot reveal. Nissen proposes periodic, independent perspectives on
+architecture, design, testing and operations, compared with written owner decisions;
+repeated findings become automated checks. The proposed scheduled method is an
+early practitioner approach, not a validated general solution.
+
+**Why this matters to AIP**
+
+AIP can be an input to an external architecture reviewer when the review concerns
+cross-boundary bindings. Comparing independent snapshots may reveal change in the
+qualified relationships, but one snapshot cannot establish a historical drift trend,
+and a broker attachment cannot verify internal codebase quality.
+
+**AIP boundary**
+
+Whole-codebase review scheduling, internal modularity analysis, automatic rule
+distillation, and approval workflows belong to adjacent tools and human owners.
 
 ### Ankur Agnihotri — Architecture Drift Reduction with LLMs
 
